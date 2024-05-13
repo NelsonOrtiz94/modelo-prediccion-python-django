@@ -1,0 +1,107 @@
+<html>
+<head>
+    <title>.:: Modelo de Predicción ::.</title>
+</head>
+<body>
+    <form action="/prediccion/" method="post">
+        {% csrf_token %}
+        <h3>Esta es una aplicación Django que incluye un modelo de predicción</h3>
+        
+        <p>&nbsp;</p>
+        <button type="submit">Predecir</button>
+        <p>&nbsp;</p>
+        <p>&nbsp;</p>
+        
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Valor Real:</th>
+                    <td>{{ test}}</td>
+                </tr>
+                <tr>
+                    <th>Valor Predicción: </th>
+                    <td>{{ prediction}}</td>
+                </tr>
+            </thead>
+        </table>
+    </form>
+
+     <!-- Gráfica highcharts-->
+     <div class="row">
+        <p>&nbsp;</p>
+        <div class="col-md-12">
+        <div class="main-card mb-3 card">
+
+            <script src="https://code.highcharts.com/highcharts.js"></script>
+            <script src="https://code.highcharts.com/modules/series-label.js"></script>
+            <script src="https://code.highcharts.com/modules/exporting.js"></script>
+            <script src="https://code.highcharts.com/modules/export-data.js"></script>
+            <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+            <figure class="highcharts-figure">
+                <div id="container">
+
+                </div>
+            </figure>
+
+            <script type="text/javascript">
+
+                Highcharts.chart('container', {
+
+                title: {
+                    text: 'Valores reales VS Predicción'
+                },
+
+                subtitle: {
+                    text: 'Datos origen: Clima, temperatura y jugar'
+                },
+
+                yAxis: {
+                    title: {
+                        text: 'Predicción'
+                    }
+                },
+
+                xAxis: {
+                    categories: []
+                },
+
+                legend: {
+                    layout: 'vertical',
+                    align: 'right',
+                    verticalAlign: 'middle'
+                },
+
+                series: [{
+                    name: 'Valores reales',
+                    data: {{test|safe}}
+                }, {
+                    name: 'Valores Predicción',
+                    data: {{prediction|safe}}
+                }],
+
+                responsive: {
+                    rules: [{
+                        condition: {
+                            maxWidth: 500
+                        },
+                        chartOptions: {
+                            legend: {
+                                layout: 'horizontal',
+                                align: 'center',
+                                verticalAlign: 'bottom'
+                            }
+                        }
+                    }]
+                }
+
+                });
+            </script>
+            </div>
+        </div>
+    </div>
+    <!-- Fin gráfica highcharts-->
+    
+</body>
+</html>
