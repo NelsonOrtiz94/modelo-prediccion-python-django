@@ -55,7 +55,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         # Cambiar la ruta del template
-        'DIRS': ['/home/jose/Documentos/GitHub/django_ml/proyecto/templates'],
+        'DIRS': ['/Users/ortiz/OneDrive/Escritorio/django_ml/proyecto/templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

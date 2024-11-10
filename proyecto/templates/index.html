@@ -1,107 +1,107 @@
+<!DOCTYPE html>
 <html>
-<head>
-    <title>.:: Modelo de Predicción ::.</title>
-</head>
-<body>
-    <form action="/prediccion/" method="post">
-        {% csrf_token %}
-        <h3>Esta es una aplicación Django que incluye un modelo de predicción</h3>
-        
-        <p>&nbsp;</p>
-        <button type="submit">Predecir</button>
-        <p>&nbsp;</p>
-        <p>&nbsp;</p>
-        
+  <head>
+    <title>Modelo de Predicción IA</title>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Valor Real:</th>
-                    <td>{{ test}}</td>
-                </tr>
-                <tr>
-                    <th>Valor Predicción: </th>
-                    <td>{{ prediction}}</td>
-                </tr>
-            </thead>
-        </table>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+      }
+      h3 {
+        color: #333;
+        text-align: center;
+      }
+      form {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        padding: 10px 20px;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 220px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      table {
+        width: 100%;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px;
+      }
+      th {
+        color: #555;
+      }
+    </style>
+
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/series-label.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+  </head>
+  <body>
+    <form action="/prediccion/" method="post">
+      {% csrf_token %}
+      <h3>Modelo de predicción para enfermedades cardiacas</h3>
+
+      <button type="submit">Realizar predicción</button>
+
+      <h4>Resultados de la Regresión Logística</h4>
+      <p>Precisión: {{ log_reg_metrics.accuracy }}</p>
+      <p>Recall: {{ log_reg_metrics.recall }}</p>
+      <p>F1 Score: {{ log_reg_metrics.f1_score }}</p>
+
+      <h4>Resultados del Árbol de Decisión</h4>
+      <p>Precisión: {{ tree_metrics.accuracy }}</p>
+      <p>Recall: {{ tree_metrics.recall }}</p>
+      <p>F1 Score: {{ tree_metrics.f1_score }}</p>
+
+      <div id="container" style="width: 100%; height: 400px"></div>
     </form>
 
-     <!-- Gráfica highcharts-->
-     <div class="row">
-        <p>&nbsp;</p>
-        <div class="col-md-12">
-        <div class="main-card mb-3 card">
-
-            <script src="https://code.highcharts.com/highcharts.js"></script>
-            <script src="https://code.highcharts.com/modules/series-label.js"></script>
-            <script src="https://code.highcharts.com/modules/exporting.js"></script>
-            <script src="https://code.highcharts.com/modules/export-data.js"></script>
-            <script src="https://code.highcharts.com/modules/accessibility.js"></script>
-
-            <figure class="highcharts-figure">
-                <div id="container">
-
-                </div>
-            </figure>
-
-            <script type="text/javascript">
-
-                Highcharts.chart('container', {
-
-                title: {
-                    text: 'Valores reales VS Predicción'
-                },
-
-                subtitle: {
-                    text: 'Datos origen: Clima, temperatura y jugar'
-                },
-
-                yAxis: {
-                    title: {
-                        text: 'Predicción'
-                    }
-                },
-
-                xAxis: {
-                    categories: []
-                },
-
-                legend: {
-                    layout: 'vertical',
-                    align: 'right',
-                    verticalAlign: 'middle'
-                },
-
-                series: [{
-                    name: 'Valores reales',
-                    data: {{test|safe}}
-                }, {
-                    name: 'Valores Predicción',
-                    data: {{prediction|safe}}
-                }],
-
-                responsive: {
-                    rules: [{
-                        condition: {
-                            maxWidth: 500
-                        },
-                        chartOptions: {
-                            legend: {
-                                layout: 'horizontal',
-                                align: 'center',
-                                verticalAlign: 'bottom'
-                            }
-                        }
-                    }]
-                }
-
-                });
-            </script>
-            </div>
-        </div>
-    </div>
-    <!-- Fin gráfica highcharts-->
-    
-</body>
+    <script type="text/javascript">
+      Highcharts.chart('container', {
+          title: { text: 'VALORES REALES vs PREDICCION' },
+          yAxis: { title: { text: 'Valores' }},
+          xAxis: { categories: [] },
+          series: [
+              {
+                  name: 'Valores reales',
+                  data: {{ test_values|safe }}
+              },
+              {
+                  name: 'Predicción - Regresión Logística',
+                  data: {{ log_reg_predictions|safe }}
+              },
+              {
+                  name: 'Predicción - Árbol de Decisión',
+                  data: {{ tree_predictions|safe }}
+              }
+          ],
+          responsive: {
+              rules: [{
+                  condition: { maxWidth: 500 },
+                  chartOptions: {
+                      legend: { layout: 'horizontal', align: 'center', verticalAlign: 'bottom' }
+                  }
+              }]
+          }
+      });
+    </script>
+  </body>
 </html>

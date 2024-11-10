@@ -1,92 +1,87 @@
-# Se importan las librerias para el template y los renders
 from django.shortcuts import render
+from django.conf import settings
 import json
-
-
-# Librerias para operaciones matemáticas
+import os
 import numpy as np
-# Libreria para el manejo de datos
 import pandas as pd
-
-
-# Libreria para cambio de datos
-from sklearn.preprocessing import LabelEncoder
-# Libreria para balanceo de los datos
-from sklearn.utils import resample
-# Libreria para separar los datos de entrenamiento y pruebas
+from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
-# Libreria para la predicción con árbol de decisión 
+from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-# Libreria para las métricas
-from sklearn.metrics import precision_score, recall_score, f1_score
-
-# -----------------------------------
+from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from imblearn.over_sampling import SMOTE
+import joblib
 
 def main(request):
-    # *** Plantilla ***
-    return render(request, 'index.html', context={})
-
-
+    # Render de la página principal sin datos iniciales
+    return render(request, 'index.html')
 
 def prediccion(request):
+    # Ruta de los modelos guardados
+    LOGISTIC_MODEL_PATH = os.path.join(settings.MEDIA_ROOT, 'modelo_regresion_logistica.pkl')
+    TREE_MODEL_PATH = os.path.join(settings.MEDIA_ROOT, 'modelo_arbol_decision.pkl')
+    
+    # Cargar los datos del archivo CSV
+    data = pd.read_csv("/Users/ortiz/OneDrive/Escritorio/django_ml/proyecto/data/heart.csv", sep=";")
+    
+    # Estandarización de variables numéricas
+    scaler = StandardScaler()
+    num_cols = ['age', 'trestbps', 'chol', 'thalach', 'oldpeak']
+    data[num_cols] = scaler.fit_transform(data[num_cols])
 
-    ### Se cargan los datos
-    data = pd.read_csv("/home/jose/Documentos/GitHub/django_ml/proyecto/data/jugar_clima_temperatura.csv", sep=";")
+    # Dividir en características (X) y variable objetivo (y)
+    X = data.drop('target', axis=1)
+    y = data['target']
 
-    ### Se modifica luvioso por lluvioso
-    data = data.replace("luvioso", "lluvioso")
+    # División en entrenamiento y prueba
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-    ### Se cambian las cadenas a valores numéricos
-    le = LabelEncoder()
+    # Balanceo de clases con SMOTE
+    smote = SMOTE(random_state=42)
+    X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
-    data['clima'] = le.fit_transform( data['clima'] )
-    data['temperatura'] = le.fit_transform( data['temperatura'] )
-    data['jugar'] = le.fit_transform( data['jugar'] )
+    # Modelo 1: Regresión Logística
+    log_reg = LogisticRegression()
+    log_reg.fit(X_train_balanced, y_train_balanced)
+    y_pred_log = log_reg.predict(X_test)
+    joblib.dump(log_reg, LOGISTIC_MODEL_PATH)  # Guardar el modelo
 
-    ### Se realiza el balanceo de los datos (oversample)
-    df_cero = data[ data['jugar'] == 0 ]
-    df_uno = data[ data['jugar'] == 1 ]
+    # Modelo 2: Árbol de Decisión
+    tree_clf = DecisionTreeClassifier(random_state=42)
+    tree_clf.fit(X_train_balanced, y_train_balanced)
+    y_pred_tree = tree_clf.predict(X_test)
+    joblib.dump(tree_clf, TREE_MODEL_PATH)  # Guardar el modelo
 
-    df_oversample_cero = resample(df_cero,
-                           replace=True,
-                           n_samples=50,
-                           random_state = 1)
+    # Evaluación del modelo de Regresión Logística
+    log_reg_metrics = {
+        "accuracy": accuracy_score(y_test, y_pred_log),
+        "recall": recall_score(y_test, y_pred_log),
+        "f1_score": f1_score(y_test, y_pred_log),
+        "roc_auc": roc_auc_score(y_test, y_pred_log),
+        "confusion_matrix": confusion_matrix(y_test, y_pred_log).tolist(),
+    }
 
-    df_oversample_uno = resample(df_uno,
-                           replace=True,
-                           n_samples=50,
-                           random_state = 1)
+    # Evaluación del modelo de Árbol de Decisión
+    tree_metrics = {
+        "accuracy": accuracy_score(y_test, y_pred_tree),
+        "recall": recall_score(y_test, y_pred_tree),
+        "f1_score": f1_score(y_test, y_pred_tree),
+        "roc_auc": roc_auc_score(y_test, y_pred_tree),
+        "confusion_matrix": confusion_matrix(y_test, y_pred_tree).tolist(),
+    }
 
-    df = pd.concat( [df_oversample_cero, df_oversample_uno] )
+    # Preparar datos para la gráfica de Highcharts
+    test_values = y_test.tolist()
+    log_reg_predictions = y_pred_log.tolist()
+    tree_predictions = y_pred_tree.tolist()
 
+    # Contexto para renderizar en la plantilla HTML
+    context = {
+        "log_reg_metrics": log_reg_metrics,
+        "tree_metrics": tree_metrics,
+        "test_values": test_values,
+        "log_reg_predictions": log_reg_predictions,
+        "tree_predictions": tree_predictions,
+    }
 
-    ### Se definen las características y variable objetivo
-    features = ['clima','temperatura']
-    # Características
-    X = df[features]
-    # Variable objetivo
-    y = df['jugar'].values
-
-    # Se separan los datos (80% entrenamiento y 20% pruebas)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state= 1)
-
-    ### Se genera la predicción sin hiperparámetros
-    # Se selecciona el algoritmo
-    dt = DecisionTreeClassifier()
-
-    # Se entrena el algoritmo
-    dt.fit(X_train, y_train)
-
-    # Se genera la predicción
-    predict = dt.predict(X_test)
-
-    # Se convierten los valores a listas
-    test= y_test.tolist()
-    prediction = predict.tolist()
-
-    # Se envian los valores al contexto para renderizar
-    context = {"test": test,
-               "prediction": prediction}
-
-    # *** Plantilla ***
-    return render(request, 'index.html', context=context)
+    return render(request, 'index.html', context)
