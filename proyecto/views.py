@@ -1,27 +1,24 @@
 from django.shortcuts import render
 from django.conf import settings
-import json
 import os
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score, confusion_matrix
+from sklearn.metrics import accuracy_score, recall_score, f1_score, roc_auc_score, confusion_matrix, roc_curve, auc
 from imblearn.over_sampling import SMOTE
+from sklearn.feature_selection import SelectKBest, f_classif
 import joblib
 
 def main(request):
-    # Render de la página principal sin datos iniciales
     return render(request, 'index.html')
 
 def prediccion(request):
-    # Ruta de los modelos guardados
     LOGISTIC_MODEL_PATH = os.path.join(settings.MEDIA_ROOT, 'modelo_regresion_logistica.pkl')
     TREE_MODEL_PATH = os.path.join(settings.MEDIA_ROOT, 'modelo_arbol_decision.pkl')
     
-    # Cargar los datos del archivo CSV
     data = pd.read_csv("/Users/ortiz/OneDrive/Escritorio/django_ml/proyecto/data/heart.csv", sep=";")
     
     # Estandarización de variables numéricas
@@ -33,26 +30,34 @@ def prediccion(request):
     X = data.drop('target', axis=1)
     y = data['target']
 
+    # Selección de características con SelectKBest
+    selector = SelectKBest(score_func=f_classif, k=5)
+    X_selected = selector.fit_transform(X, y)
+
     # División en entrenamiento y prueba
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+    X_train, X_test, y_train, y_test = train_test_split(X_selected, y, test_size=0.2, random_state=42, stratify=y)
 
     # Balanceo de clases con SMOTE
     smote = SMOTE(random_state=42)
     X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
 
-    # Modelo 1: Regresión Logística
-    log_reg = LogisticRegression()
-    log_reg.fit(X_train_balanced, y_train_balanced)
+    # Ajuste de hiperparámetros para Regresión Logística
+    param_grid_log = {'C': [0.1, 1, 10, 100], 'solver': ['liblinear', 'lbfgs']}
+    grid_log = GridSearchCV(LogisticRegression(), param_grid_log, cv=5, scoring='f1')
+    grid_log.fit(X_train_balanced, y_train_balanced)
+    log_reg = grid_log.best_estimator_
     y_pred_log = log_reg.predict(X_test)
-    joblib.dump(log_reg, LOGISTIC_MODEL_PATH)  # Guardar el modelo
+    joblib.dump(log_reg, LOGISTIC_MODEL_PATH)
 
-    # Modelo 2: Árbol de Decisión
-    tree_clf = DecisionTreeClassifier(random_state=42)
-    tree_clf.fit(X_train_balanced, y_train_balanced)
+    # Ajuste de hiperparámetros para Árbol de Decisión
+    param_grid_tree = {'max_depth': [None, 10, 20, 30], 'min_samples_split': [2, 5, 10], 'min_samples_leaf': [1, 2, 4]}
+    grid_tree = GridSearchCV(DecisionTreeClassifier(random_state=42), param_grid_tree, cv=5, scoring='f1')
+    grid_tree.fit(X_train_balanced, y_train_balanced)
+    tree_clf = grid_tree.best_estimator_
     y_pred_tree = tree_clf.predict(X_test)
-    joblib.dump(tree_clf, TREE_MODEL_PATH)  # Guardar el modelo
+    joblib.dump(tree_clf, TREE_MODEL_PATH)
 
-    # Evaluación del modelo de Regresión Logística
+    # Evaluación de la Regresión Logística
     log_reg_metrics = {
         "accuracy": accuracy_score(y_test, y_pred_log),
         "recall": recall_score(y_test, y_pred_log),
@@ -61,7 +66,7 @@ def prediccion(request):
         "confusion_matrix": confusion_matrix(y_test, y_pred_log).tolist(),
     }
 
-    # Evaluación del modelo de Árbol de Decisión
+    # Evaluación del Árbol de Decisión
     tree_metrics = {
         "accuracy": accuracy_score(y_test, y_pred_tree),
         "recall": recall_score(y_test, y_pred_tree),
@@ -70,12 +75,11 @@ def prediccion(request):
         "confusion_matrix": confusion_matrix(y_test, y_pred_tree).tolist(),
     }
 
-    # Preparar datos para la gráfica de Highcharts
+    # Datos para gráficas
     test_values = y_test.tolist()
     log_reg_predictions = y_pred_log.tolist()
     tree_predictions = y_pred_tree.tolist()
 
-    # Contexto para renderizar en la plantilla HTML
     context = {
         "log_reg_metrics": log_reg_metrics,
         "tree_metrics": tree_metrics,

@@ -1,8 +1,7 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>Modelo de Predicción IA</title>
-
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -47,133 +46,96 @@
         color: #555;
       }
     </style>
-
+    <!-- Highcharts y sus módulos -->
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/modules/series-label.js"></script>
     <script src="https://code.highcharts.com/modules/exporting.js"></script>
-    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script> <!-- Módulo para exportar datos -->
     <script src="https://code.highcharts.com/modules/accessibility.js"></script>
-  </head>
-  <body>
+</head>
+<body>
     <form action="/prediccion/" method="post">
-      {% csrf_token %}
-      <h3>Modelo de predicción para enfermedades cardiacas</h3>
+        {% csrf_token %}
+        <h3>Modelo de predicción para enfermedades cardiacas</h3>
+        <button type="submit">Realizar predicción</button>
 
-      <button type="submit">Realizar predicción</button>
+        <h4>Resultados de la Regresión Logística</h4>
+        <p>Precisión: {{ log_reg_metrics.accuracy }}</p>
+        <p>Recall: {{ log_reg_metrics.recall }}</p>
+        <p>F1 Score: {{ log_reg_metrics.f1_score }}</p>
 
-      <h4>Resultados de la Regresión Logística</h4>
-      <p>Precisión: {{ log_reg_metrics.accuracy }}</p>
-      <p>Recall: {{ log_reg_metrics.recall }}</p>
-      <p>F1 Score: {{ log_reg_metrics.f1_score }}</p>
+        <h4>Resultados del Árbol de Decisión</h4>
+        <p>Precisión: {{ tree_metrics.accuracy }}</p>
+        <p>Recall: {{ tree_metrics.recall }}</p>
+        <p>F1 Score: {{ tree_metrics.f1_score }}</p>
 
-      <h4>Resultados del Árbol de Decisión</h4>
-      <p>Precisión: {{ tree_metrics.accuracy }}</p>
-      <p>Recall: {{ tree_metrics.recall }}</p>
-      <p>F1 Score: {{ tree_metrics.f1_score }}</p>
-
-      <div id="container" style="width: 100%; height: 400px"></div>
+        <div id="container" style="width: 100%; height: 400px;"></div>
     </form>
 
-    <!-- Gráfico de pastel para ver la proporción de predicciones correctas vs incorrectas -->
+    <!-- Gráfico de pastel para predicciones correctas e incorrectas -->
     <figure class="highcharts-figure">
-      <div id="pie-chart"></div>
+        <div id="pie-chart"></div>
     </figure>
 
-    <!-- Gráfico de barras apiladas para comparar precisión y recall entre los modelos -->
+    <!-- Gráfico de barras apiladas para comparar precisión y recall entre modelos -->
     <figure class="highcharts-figure">
-      <div id="stacked-bar-chart"></div>
+        <div id="stacked-bar-chart"></div>
     </figure>
 
     <script type="text/javascript">
-      Highcharts.chart('container', {
-          title: { text: 'VALORES REALES vs PREDICCION' },
-          yAxis: { title: { text: 'Valores' }},
-          xAxis: { categories: [] },
-          series: [
-              {
-                  name: 'Valores reales',
-                  data: {{ test_values|safe }}
-              },
-              {
-                  name: 'Predicción - Regresión Logística',
-                  data: {{ log_reg_predictions|safe }}
-              },
-              {
-                  name: 'Predicción - Árbol de Decisión',
-                  data: {{ tree_predictions|safe }}
-              }
-          ],
-          responsive: {
-              rules: [{
-                  condition: { maxWidth: 500 },
-                  chartOptions: {
-                      legend: { layout: 'horizontal', align: 'center', verticalAlign: 'bottom' }
-                  }
-              }]
-          }
-      });
+        Highcharts.chart('container', {
+            title: { text: 'VALORES REALES vs PREDICCIÓN' },
+            yAxis: { title: { text: 'Valores' }},
+            xAxis: { categories: [] },
+            series: [
+                {
+                    name: 'Valores reales',
+                    data: {{ test_values|safe }}
+                },
+                {
+                    name: 'Predicción - Regresión Logística',
+                    data: {{ log_reg_predictions|safe }}
+                },
+                {
+                    name: 'Predicción - Árbol de Decisión',
+                    data: {{ tree_predictions|safe }}
+                }
+            ],
+            responsive: {
+                rules: [{
+                    condition: { maxWidth: 500 },
+                    chartOptions: {
+                        legend: { layout: 'horizontal', align: 'center', verticalAlign: 'bottom' }
+                    }
+                }]
+            }
+        });
 
-      // Datos de ejemplo
-    const correctPredictions = 70; // Número de predicciones correctas
-    const incorrectPredictions = 30; // Número de predicciones incorrectas
-
-    // Gráfico de pastel
-    Highcharts.chart('pie-chart', {
-        chart: {
-            type: 'pie'
-        },
-        title: {
-            text: 'Proporción de Predicciones Correctas e Incorrectas'
-        },
-        series: [{
-            name: 'Predicciones',
-            colorByPoint: true,
-            data: [{
-                name: 'Correctas',
-                y: correctPredictions,
-                sliced: true,
-                selected: true
-            }, {
-                name: 'Incorrectas',
-                y: incorrectPredictions
+        Highcharts.chart('pie-chart', {
+            chart: { type: 'pie' },
+            title: { text: 'Proporción de Predicciones Correctas e Incorrectas' },
+            series: [{
+                name: 'Predicciones',
+                colorByPoint: true,
+                data: [
+                    { name: 'Correctas', y: 70, sliced: true, selected: true },
+                    { name: 'Incorrectas', y: 30 }
+                ]
             }]
-        }]
-    });
+        });
 
-    // Gráfico de barras apiladas para comparar precisión y recall entre modelos
-    Highcharts.chart('stacked-bar-chart', {
-        chart: {
-            type: 'bar'
-        },
-        title: {
-            text: 'Comparación de Métricas entre Modelos'
-        },
-        xAxis: {
-            categories: ['Precisión', 'Recall', 'F1-Score']
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: 'Porcentaje'
-            }
-        },
-        legend: {
-            reversed: true
-        },
-        plotOptions: {
-            series: {
-                stacking: 'normal'
-            }
-        },
-        series: [{
-            name: 'Regresión Logística',
-            data: [85, 78, 80]  // Datos de precisión, recall y F1-Score para el modelo de Regresión Logística
-        }, {
-            name: 'Árbol de Decisión',
-            data: [80, 75, 78]  // Datos de precisión, recall y F1-Score para el modelo de Árbol de Decisión
-        }]
-    });
-
+        Highcharts.chart('stacked-bar-chart', {
+            chart: { type: 'bar' },
+            title: { text: 'Comparación de Métricas entre Modelos' },
+            xAxis: { categories: ['Precisión', 'Recall', 'F1-Score'] },
+            yAxis: { min: 0, title: { text: 'Porcentaje' }},
+            legend: { reversed: true },
+            plotOptions: { series: { stacking: 'normal' }},
+            series: [
+                { name: 'Regresión Logística', data: [85, 78, 80] },
+                { name: 'Árbol de Decisión', data: [80, 75, 78] }
+            ]
+        });
     </script>
-  </body>
+</body>
 </html>
