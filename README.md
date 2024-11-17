@@ -2,7 +2,7 @@
 
 Plantilla Django para implementación de modelos de machine learning
 
-Autor: José M. Llanos M.
+Autor: Nelson Ortiz
 
 
 ## Paso 1: Instalación de Django
@@ -39,7 +39,7 @@ nombre_proyecto $ python3 manage.py runserver
 
 ## Paso 7: Clone la plantilla de Django
 
-git clone https://github.com/jose-llanos/django_ml.git
+git clone https://github.com/NelsonOrtiz94/modelo-prediccion-python-django.git
 
 ## Paso 8: Modifique el archivo views.py
 
